@@ -210,14 +210,39 @@ class GroupMemoryEngine:
         self.warned_builtin_ltm_at: Dict[str, float] = {}
         # 图片本地缓存: image_key → 本地文件路径
         self._image_cache: Dict[str, str] = {}
+        # image_key → 所属会话 umo（用于按会话清理）
+        self._image_key_to_umo: Dict[str, str] = {}
         # 按规范存储在 data/plugin_data/{plugin_name}/image_cache/
         self._cache_dir = str(
             get_astrbot_data_path() / "plugin_data" / plugin_name / "image_cache"
         )
         os.makedirs(self._cache_dir, exist_ok=True)
+        # 启动时清理超过 24 小时的旧缓存文件
+        self._cleanup_stale_cache(max_age_hours=24)
 
     def _cfg_bool(self, key: str, default: bool) -> bool:
         return bool(self.plugin_config.get(key, default))
+
+    def _cleanup_stale_cache(self, max_age_hours: int = 24) -> None:
+        """清理超过指定小时数的旧缓存文件。"""
+        try:
+            now = time.time()
+            cutoff = now - max_age_hours * 3600
+            removed = 0
+            for filename in os.listdir(self._cache_dir):
+                filepath = os.path.join(self._cache_dir, filename)
+                if not os.path.isfile(filepath):
+                    continue
+                try:
+                    if os.path.getmtime(filepath) < cutoff:
+                        os.remove(filepath)
+                        removed += 1
+                except OSError:
+                    pass
+            if removed > 0:
+                logger.info("GroupMemory | cleaned up %d stale cache files (>%dh)", removed, max_age_hours)
+        except Exception as exc:
+            logger.warning("GroupMemory | cache cleanup failed: %s", exc)
 
     def _cfg_int(self, key: str, default: int, minimum: int = 0) -> int:
         try:
@@ -273,7 +298,7 @@ class GroupMemoryEngine:
                     raise RuntimeError(f"HTTP {resp.status} for {url}")
                 return await resp.read()
 
-    async def _cache_image(self, image_key: str, image_url: str) -> str | None:
+    async def _cache_image(self, image_key: str, image_url: str, umo: str = "") -> str | None:
         """
         下载 → 格式/分辨率/宽高比校验 → 自动缩放 → 压缩 → 缓存到本地。
         返回本地路径或 None（图片不可用）。
@@ -318,6 +343,8 @@ class GroupMemoryEngine:
             with open(local_path, "wb") as f:
                 f.write(processed)
             self._image_cache[image_key] = local_path
+            if umo:
+                self._image_key_to_umo[image_key] = umo
             return local_path
         except Exception as exc:
             logger.warning(
@@ -405,7 +432,7 @@ class GroupMemoryEngine:
                 if image_url and key_source:
                     img_key = self._image_key(key_source)
                     # 立即下载并缓存图片，防止 URL 过期
-                    cached_path = await self._cache_image(img_key, image_url)
+                    cached_path = await self._cache_image(img_key, image_url, event.unified_msg_origin)
                     if cached_path:
                         parts.append(
                             GroupPart(
@@ -453,6 +480,22 @@ class GroupMemoryEngine:
             "seen_images": len(self.seen_images.get(umo, {})),
             "pending": len(self.pending_queue.get(umo, [])),
         }
+        # 清理该会话关联的缓存文件
+        keys_to_remove = [
+            k for k, u in self._image_key_to_umo.items() if u == umo
+        ]
+        files_removed = 0
+        for key in keys_to_remove:
+            cached_path = self._image_cache.pop(key, None)
+            self._image_key_to_umo.pop(key, None)
+            if cached_path and os.path.isfile(cached_path):
+                try:
+                    os.remove(cached_path)
+                    files_removed += 1
+                except OSError:
+                    pass
+        if files_removed > 0:
+            logger.info("GroupMemory | removed %d cached image files for session %s", files_removed, umo)
         self.session_records.pop(umo, None)
         self.seen_images.pop(umo, None)
         self.pending_queue.pop(umo, None)
