@@ -20,7 +20,7 @@ from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.message_components import At, Image, Plain
 from astrbot.api.platform import MessageType
-from astrbot.core.utils.astrbot_path import get_astrbot_data_path
+from astrbot.core.utils.astrbot_path import get_astrbot_plugin_data_path
 
 # ---------- 图片格式 / 分辨率 / 大小常量 ----------
 
@@ -214,8 +214,8 @@ class GroupMemoryEngine:
         # image_key → 所属会话 umo（用于按会话清理）
         self._image_key_to_umo: Dict[str, str] = {}
         # 按规范存储在 data/plugin_data/{plugin_name}/image_cache/
-        self._cache_dir = str(
-            get_astrbot_data_path() / "plugin_data" / plugin_name / "image_cache"
+        self._cache_dir = os.path.join(
+            get_astrbot_plugin_data_path(), plugin_name, "image_cache"
         )
         os.makedirs(self._cache_dir, exist_ok=True)
         # 启动时清理超过 24 小时的旧缓存文件
