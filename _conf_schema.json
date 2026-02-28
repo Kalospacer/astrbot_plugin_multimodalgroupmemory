@@ -1,0 +1,51 @@
+﻿{
+  "enable_group_context": {
+    "description": "启用群聊上下文接管",
+    "type": "bool",
+    "default": true,
+    "hint": "启用后由本插件接管群聊记忆注入与图片记忆策略"
+  },
+  "group_message_max_cnt": {
+    "description": "群聊记忆最大消息数量",
+    "type": "int",
+    "default": 300,
+    "hint": "超过后按时间淘汰最早消息"
+  },
+  "image_caption": {
+    "description": "复见图片自动转述",
+    "type": "bool",
+    "default": false,
+    "hint": "启用后复见图片可记为 [Image: xxx]"
+  },
+  "image_caption_provider_id": {
+    "description": "图片转述模型",
+    "type": "string",
+    "default": "",
+    "_special": "select_provider",
+    "hint": "用于复见图片的文本转述；为空时退化为 [Image]"
+  },
+  "image_caption_prompt": {
+    "description": "图片转述提示词",
+    "type": "string",
+    "default": "Please describe the image using Chinese.",
+    "hint": "传给图片转述模型的提示词"
+  },
+  "history_message_window": {
+    "description": "图片扫描历史窗口",
+    "type": "int",
+    "default": 5,
+    "hint": "只在最近 N 条消息中选择候选图片"
+  },
+  "max_native_images_per_round": {
+    "description": "每轮原生注入图片上限",
+    "type": "int",
+    "default": 2,
+    "hint": "同一轮最多原生注入多少张未见图片"
+  },
+  "pending_max_wait_rounds": {
+    "description": "待注入图片最大等待轮数",
+    "type": "int",
+    "default": 2,
+    "hint": "超过该轮数仍未注入则从队列淘汰"
+  }
+}

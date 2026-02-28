@@ -1,0 +1,8 @@
+﻿name: astrbot_plugin_multimodalgroupmemory
+description: "接管版群聊上下文记忆增强插件（首见图片原生注入，复见图片文本记忆）"
+author: Kalospacer
+version: 1.0.0
+repo: "https://github.com/Kalospacer/astrbot_plugin_multimodalgroupmemory.git"
+support_platforms:
+  - aiocqhttp
+astrbot_version: ">=4.18.0"
