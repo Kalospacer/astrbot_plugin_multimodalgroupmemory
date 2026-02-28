@@ -1,4 +1,4 @@
-﻿{
+{
   "enable_group_context": {
     "description": "启用群聊上下文接管",
     "type": "bool",
