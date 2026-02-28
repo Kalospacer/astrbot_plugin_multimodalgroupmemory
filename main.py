@@ -815,7 +815,8 @@ class GroupMemoryPlugin(star.Star):
     def __init__(self, context: star.Context, config):
         super().__init__(context)
         self.config = config
-        self.group_memory = GroupMemoryEngine(self.context, self.config, self.name)
+        plugin_name = getattr(self, "name", None) or "astrbot_plugin_multimodalgroupmemory"
+        self.group_memory = GroupMemoryEngine(self.context, self.config, plugin_name)
         self.group_memory.warn_builtin_ltm_enabled(force=True)
         logger.info("GroupMemory plugin initialized (group context takeover only)")
 
