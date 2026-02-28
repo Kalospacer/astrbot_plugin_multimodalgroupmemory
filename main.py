@@ -15,6 +15,7 @@ import certifi
 from PIL import Image as PILImage
 
 import astrbot.api.star as star
+from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.message_components import At, Image, Plain
@@ -811,11 +812,26 @@ class GroupMemoryEngine:
             self.record_bot_reply(event, completion_text)
 
 
-class GroupMemoryPlugin(star.Star):
-    def __init__(self, context: star.Context, config):
+PLUGIN_NAME = "astrbot_plugin_multimodalgroupmemory"
+PLUGIN_AUTHOR = "Kalospacer"
+PLUGIN_DESC = "多模态群聊记忆插件"
+PLUGIN_VERSION = "1.0.0"
+
+
+@register(PLUGIN_NAME, PLUGIN_AUTHOR, PLUGIN_DESC, PLUGIN_VERSION,
+          repo="https://github.com/Kalospacer/astrbot_plugin_multimodalgroupmemory")
+class GroupMemoryPlugin(Star):
+    def __init__(self, context: Context, config=None):
         super().__init__(context)
+        # 兜底：旧版加载路径不会在实例化前注入 name/author/plugin_id
+        if not hasattr(self, "name") or not self.name:
+            self.name = PLUGIN_NAME
+        if not hasattr(self, "author") or not self.author:
+            self.author = PLUGIN_AUTHOR
+        if not hasattr(self, "plugin_id") or not self.plugin_id:
+            self.plugin_id = f"{PLUGIN_AUTHOR.lower()}/{PLUGIN_NAME}"
         self.config = config
-        self.group_memory = GroupMemoryEngine(self.context, self.config, "astrbot_plugin_multimodalgroupmemory")
+        self.group_memory = GroupMemoryEngine(self.context, self.config, PLUGIN_NAME)
         self.group_memory.warn_builtin_ltm_enabled(force=True)
         logger.info("GroupMemory plugin initialized (group context takeover only)")
 
